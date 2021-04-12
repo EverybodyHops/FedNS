@@ -80,9 +80,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     fedavg = FedAvg(100, 50, args.batch_num, args.alpha, 0.1)
-    for i in range(500):
+    for i in range(100):
         print("Now round ", i)
         now = fedavg.select_client()
         fedavg.train_all(now)
         fedavg.aggregation(now)
+        print(fedavg.global_model.v_list[4].shape)
+        np.save("./model_data/fedavg/%d" % (i), fedavg.global_model.v_list[4])
     np.savetxt(args.file, np.array(fedavg.global_acc))
