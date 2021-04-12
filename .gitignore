@@ -1,0 +1,12 @@
+/__pycache__/
+/MNIST_data/
+*.pyc
+*.asv
+/exp/
+/picture/
+/expGD/
+/.ipynb_checkpoints/
+/trace_data/
+/exp_data*/
+/CIFAR_*/
+/Fashion*/
