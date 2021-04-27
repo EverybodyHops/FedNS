@@ -7,6 +7,8 @@ from tqdm import tqdm
 import numpy as np
 import argparse
 
+SEED = 17
+
 class FedAvg:
     def __init__(self, client_num, batch_size, batch_num, alpha, C):
         self.model = fed_model.model(sess=tf.InteractiveSession())
@@ -73,6 +75,10 @@ class FedAvg:
             self.global_model.v_list[i] = np.divide(self.global_model.v_list[i], t)
 
 if __name__ == "__main__":
+    random.seed(SEED)
+    np.random.seed(SEED)
+    tf.set_random_seed(SEED)
+
     parser = argparse.ArgumentParser(description="fedavg.")
     parser.add_argument('-bn', '--batch_num', default=12, type=int)
     parser.add_argument('-a', '--alpha', default=1, type=float)
