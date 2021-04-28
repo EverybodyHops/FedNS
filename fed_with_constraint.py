@@ -13,6 +13,11 @@ class FedAvg:
     def __init__(self, client_num, batch_size, batch_num, alpha, C):
         self.model = fed_model.model(sess=tf.InteractiveSession())
         self.global_model = self.model.get_model_values()
+        
+        # shallow copy !!!!!!!!!
+        self.global_model.v_list_target = self.global_model.v_list
+        # print(self.global_model.v_list_target)
+
         self.local_models = []
         self.client_num = client_num
         for i in range(client_num):
@@ -47,7 +52,8 @@ class FedAvg:
         print("Start train client ", client_idx)
         for i in range(self.batch_num):
             batch = now_dataset.next_batch(self.batch_size)
-            self.model.train(batch[0], batch[1])
+            # self.model.train(batch[0], batch[1])
+            self.model.train_prox(batch[0], batch[1])
         self.local_models[client_idx] = self.model.get_model_values()
         print("End train client ", client_idx, ", now local acc: ", self.model.vaild(self.test[0], self.test[1]))
 
@@ -86,11 +92,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     fedavg = FedAvg(100, 50, args.batch_num, args.alpha, 0.1)
-    for i in range(100):
+    for i in range(500):
         print("Now round ", i)
         now = fedavg.select_client()
         fedavg.train_all(now)
         fedavg.aggregation(now)
-        print(fedavg.global_model.v_list[4].shape)
-        np.save("./model_data/fedavg/%d" % (i), fedavg.global_model.v_list[4])
+        # print(fedavg.global_model.v_list[4].shape)
+        # np.save("./model_data/fedavg/%d" % (i), fedavg.global_model.v_list[4])
     np.savetxt(args.file, np.array(fedavg.global_acc))

@@ -8,6 +8,7 @@ SEED = 17
 class model_values:
     def __init__(self):
         self.v_list = []
+        self.v_list_target = []
 
 class model:
     def __init__(self, sess, learning_rate=1e-4):
@@ -46,13 +47,18 @@ class model:
         self.prox = []
         for i in range(len(self.all_variable)):
             self.prox.append(tf.reduce_sum(tf.square(tf.subtract(self.all_variable[i], self.all_variable_target[i]))))
-        self.prox_loss = tf.clip_by_value(tf.sqrt(tf.add_n(self.prox)), 1e-10, 1000)
-        
+        self.prox_loss = tf.clip_by_value(tf.sqrt(tf.add_n(self.prox) + 1e-10), 1e-10, 1000)
+
         self.curv = []
         for i in range(len(self.all_variable)):
             self.curv.append(tf.reduce_sum(tf.square(tf.multiply(self.gradient_plh[i], tf.subtract(self.all_variable[i], self.all_variable_target[i])))))
-        self.curv_loss = tf.clip_by_value(tf.sqrt(tf.add_n(self.curv)), 1e-10, 1000)
+        self.curv_loss = tf.clip_by_value(tf.sqrt(tf.add_n(self.curv) + 1e-10), 1e-10, 1000)
 
+        self.fedprox = self.cross_entropy + self.prox_loss
+        self.train_prox_op = tf.train.GradientDescentOptimizer(learning_rate).minimize(self.fedprox, var_list=self.all_variable)
+
+
+        self.net_gradients_prox = tf.gradients(self.prox_loss, self.all_variable)
         # init
         self.sess.run(tf.initialize_all_variables())
 
@@ -126,9 +132,30 @@ class model:
             plh: v for plh, v in zip(self.set_values_plh, model_v.v_list)
         })
 
+        self.sess.run(self.set_values_op_target, feed_dict={
+            plh: v for plh, v in zip(self.set_values_plh_target, model_v.v_list_target)
+        })
+
     def train(self, x_batch, y_batch):
         x_batch, y_batch = tflearn.data_utils.shuffle(x_batch, y_batch)
         self.sess.run(self.train_step, feed_dict={
+            self.x: x_batch,
+            self.y_: y_batch
+        })
+
+    def train_prox(self, x_batch, y_batch):
+        x_batch, y_batch = tflearn.data_utils.shuffle(x_batch, y_batch)
+        '''
+        print(self.sess.run(self.cross_entropy, feed_dict={
+            self.x: x_batch,
+            self.y_: y_batch
+        }))
+        print(self.sess.run(self.prox_loss, feed_dict={
+            self.x: x_batch,
+            self.y_: y_batch
+        }))
+        '''
+        self.sess.run(self.train_prox_op, feed_dict={
             self.x: x_batch,
             self.y_: y_batch
         })
